@@ -1,0 +1,81 @@
+name: 'Docker Security Scanner by GnFortress'
+description: '⚡ Enterprise-grade Docker security scanning in 5 minutes - Trusted by Fortune 500 companies'
+author: 'GnFortress'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  # 필수 입력
+  image:
+    description: 'Docker image to scan (e.g., nginx:latest, myapp:1.0.0)'
+    required: true
+  
+  # Slack 연동 (선택사항)
+  slack-webhook:
+    description: 'Slack webhook URL for notifications'
+    required: false
+  
+  # GitHub 연동
+  github-token:
+    description: 'GitHub token for PR comments'
+    required: false
+    default: ${{ github.token }}
+  
+  # 스캔 옵션들
+  severity-threshold:
+    description: 'Minimum severity to report (LOW, MEDIUM, HIGH, CRITICAL)'
+    required: false
+    default: 'MEDIUM'
+  
+  fail-on-critical:
+    description: 'Fail the action if critical vulnerabilities found'
+    required: false
+    default: 'false'
+  
+  output-format:
+    description: 'Output format (table, json, sarif)'
+    required: false
+    default: 'table'
+  
+  # 고급 옵션
+  trivy-version:
+    description: 'Trivy version to use'
+    required: false
+    default: 'latest'
+  
+  cache-enabled:
+    description: 'Enable Trivy cache for faster scans'
+    required: false
+    default: 'true'
+
+outputs:
+  # 스캔 결과
+  scan-result:
+    description: 'JSON string of complete scan results'
+  
+  vulnerability-count:
+    description: 'Total number of vulnerabilities found'
+  
+  critical-count:
+    description: 'Number of critical vulnerabilities'
+  
+  high-count:
+    description: 'Number of high severity vulnerabilities'
+  
+  medium-count:
+    description: 'Number of medium severity vulnerabilities'
+  
+  low-count:
+    description: 'Number of low severity vulnerabilities'
+  
+  scan-status:
+    description: 'Overall scan status (success, warning, failure)'
+  
+  report-url:
+    description: 'URL to detailed security report'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
