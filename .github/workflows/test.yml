@@ -1,0 +1,128 @@
+name: 🧪 Test GnFortress Docker Security Scanner
+
+on:
+  # 코드 푸시 시 자동 실행
+  push:
+    branches: [ main, develop ]
+  
+  # PR 생성 시 자동 실행  
+  pull_request:
+    branches: [ main ]
+  
+  # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      test-image:
+        description: 'Docker image to test (default: nginx:latest)'
+        required: false
+        default: 'nginx:latest'
+
+jobs:
+  # 🧪 기본 기능 테스트
+  basic-test:
+    name: "🔍 Basic Security Scan Test"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+      
+      - name: "🏰 Run GnFortress Docker Security Scanner"
+        id: security-scan
+        uses: ./  # 현재 리포지토리의 action 사용
+        with:
+          image: 'nginx:latest'
+          severity-threshold: 'MEDIUM'
+          output-format: 'table'
+          fail-on-critical: 'false'
+      
+      - name: "📊 Display Scan Results"
+        run: |
+          echo "🏆 Scan completed successfully!"
+          echo "📈 Vulnerability Count: ${{ steps.security-scan.outputs.vulnerability-count }}"
+          echo "🔴 Critical: ${{ steps.security-scan.outputs.critical-count }}"
+          echo "🟠 High: ${{ steps.security-scan.outputs.high-count }}"
+          echo "🟡 Medium: ${{ steps.security-scan.outputs.medium-count }}"
+          echo "🟢 Low: ${{ steps.security-scan.outputs.low-count }}"
+          echo "✅ Status: ${{ steps.security-scan.outputs.scan-status }}"
+
+  # 🚀 다양한 이미지 테스트
+  multi-image-test:
+    name: "🔄 Multiple Images Test"
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        test-image: 
+          - 'nginx:latest'
+          - 'alpine:latest'
+          - 'node:18'
+        severity: ['HIGH', 'MEDIUM', 'LOW']
+    
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+      
+      - name: "🔍 Scan ${{ matrix.test-image }} (Severity: ${{ matrix.severity }})"
+        uses: ./
+        with:
+          image: ${{ matrix.test-image }}
+          severity-threshold: ${{ matrix.severity }}
+          output-format: 'json'
+          
+  # ⚡ 성능 테스트  
+  performance-test:
+    name: "⚡ Performance Test"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+      
+      - name: "⏱️ Measure scan time"
+        run: |
+          echo "🏁 Starting performance test..."
+          START_TIME=$(date +%s)
+          echo "start-time=$START_TIME" >> $GITHUB_ENV
+      
+      - name: "🚀 Quick scan test"
+        uses: ./
+        with:
+          image: 'alpine:latest'  # 가벼운 이미지로 빠른 테스트
+          severity-threshold: 'HIGH'
+          cache-enabled: 'true'
+      
+      - name: "📊 Calculate execution time"
+        run: |
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - start_time))
+          echo "⏱️ Total execution time: ${DURATION} seconds"
+          
+          if [ $DURATION -lt 300 ]; then
+            echo "✅ Performance test PASSED (under 5 minutes)"
+          else
+            echo "⚠️ Performance test WARNING (over 5 minutes)"
+          fi
+
+  # 🔧 에러 핸들링 테스트
+  error-handling-test:
+    name: "🔧 Error Handling Test"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+      
+      - name: "❌ Test with invalid image (should fail gracefully)"
+        uses: ./
+        continue-on-error: true  # 에러가 나도 워크플로우 계속 진행
+        with:
+          image: 'invalid-image-name-123456'
+          severity-threshold: 'HIGH'
+      
+      - name: "✅ Test with empty image name (should fail gracefully)"  
+        uses: ./
+        continue-on-error: true
+        with:
+          image: ''
+          severity-threshold: 'MEDIUM'
