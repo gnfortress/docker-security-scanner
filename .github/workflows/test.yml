@@ -1,15 +1,10 @@
 name: 🧪 Test GnFortress Docker Security Scanner
 
 on:
-  # 코드 푸시 시 자동 실행
   push:
     branches: [ main, develop ]
-  
-  # PR 생성 시 자동 실행  
   pull_request:
     branches: [ main ]
-  
-  # 수동 실행 가능
   workflow_dispatch:
     inputs:
       test-image:
@@ -18,7 +13,6 @@ on:
         default: 'nginx:latest'
 
 jobs:
-  # 🧪 기본 기능 테스트
   basic-test:
     name: "🔍 Basic Security Scan Test"
     runs-on: ubuntu-latest
@@ -29,7 +23,7 @@ jobs:
       
       - name: "🏰 Run GnFortress Docker Security Scanner"
         id: security-scan
-        uses: ./  # 현재 리포지토리의 action 사용
+        uses: ./
         with:
           image: 'nginx:latest'
           severity-threshold: 'MEDIUM'
@@ -46,11 +40,10 @@ jobs:
           echo "🟢 Low: ${{ steps.security-scan.outputs.low-count }}"
           echo "✅ Status: ${{ steps.security-scan.outputs.scan-status }}"
 
-  # 🚀 다양한 이미지 테스트
   multi-image-test:
     name: "🔄 Multiple Images Test"
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         test-image: 
@@ -69,8 +62,7 @@ jobs:
           image: ${{ matrix.test-image }}
           severity-threshold: ${{ matrix.severity }}
           output-format: 'json'
-          
-  # ⚡ 성능 테스트  
+
   performance-test:
     name: "⚡ Performance Test"
     runs-on: ubuntu-latest
@@ -78,33 +70,30 @@ jobs:
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
-      
+
       - name: "⏱️ Measure scan time"
-        run: |
-          echo "🏁 Starting performance test..."
-          START_TIME=$(date +%s)
-          echo "start-time=$START_TIME" >> $GITHUB_ENV
-      
+        id: timer
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
       - name: "🚀 Quick scan test"
         uses: ./
         with:
-          image: 'alpine:latest'  # 가벼운 이미지로 빠른 테스트
+          image: 'alpine:latest'
           severity-threshold: 'HIGH'
           cache-enabled: 'true'
-      
+
       - name: "📊 Calculate execution time"
         run: |
           END_TIME=$(date +%s)
-          DURATION=$((END_TIME - start_time))
+          START_TIME=${{ steps.timer.outputs.start_time }}
+          DURATION=$((END_TIME - START_TIME))
           echo "⏱️ Total execution time: ${DURATION} seconds"
-          
           if [ $DURATION -lt 300 ]; then
             echo "✅ Performance test PASSED (under 5 minutes)"
           else
             echo "⚠️ Performance test WARNING (over 5 minutes)"
           fi
 
-  # 🔧 에러 핸들링 테스트
   error-handling-test:
     name: "🔧 Error Handling Test"
     runs-on: ubuntu-latest
@@ -112,10 +101,10 @@ jobs:
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
-      
+
       - name: "❌ Test with invalid image (should fail gracefully)"
         uses: ./
-        continue-on-error: true  # 에러가 나도 워크플로우 계속 진행
+        continue-on-error: true
         with:
           image: 'invalid-image-name-123456'
           severity-threshold: 'HIGH'
@@ -124,5 +113,5 @@ jobs:
         uses: ./
         continue-on-error: true
         with:
-          image: ''
+          image: ' '  # 공백으로 처리하여 getInput required 에러 방지
           severity-threshold: 'MEDIUM'
