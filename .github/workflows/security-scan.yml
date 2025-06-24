@@ -1,0 +1,60 @@
+name: 🛡️ Docker Security Scan
+
+on:
+  # 모든 push와 PR에서 실행
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  
+  # 매일 밤 12시에 자동 스캔 (선택사항)
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # 수동 실행 가능
+  workflow_dispatch:
+    inputs:
+      custom-image:
+        description: 'Custom Docker image to scan'
+        required: false
+        default: 'nginx:latest'
+
+jobs:
+  security-scan:
+    name: 🔍 Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+      
+      # 여러분의 Action 사용!
+      - name: 🏰 Run GnFortress Security Scanner
+        id: security-scan
+        uses: gnfortress/docker-security-scanner@v1
+        with:
+          image: ${{ github.event.inputs.custom-image || 'nginx:latest' }}
+          severity-threshold: 'HIGH'
+          fail-on-critical: 'true'
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-format: 'sarif'
+      
+      # 스캔 결과 활용
+      - name: 📊 Display Results
+        run: |
+          echo "🏆 Scan Status: ${{ steps.security-scan.outputs.scan-status }}"
+          echo "📈 Total Vulnerabilities: ${{ steps.security-scan.outputs.vulnerability-count }}"
+          echo "🔴 Critical: ${{ steps.security-scan.outputs.critical-count }}"
+          echo "🟠 High: ${{ steps.security-scan.outputs.high-count }}"
+          
+          if [ "${{ steps.security-scan.outputs.critical-count }}" -gt "0" ]; then
+            echo "⚠️ CRITICAL VULNERABILITIES DETECTED!"
+          fi
+      
+      # SARIF 결과를 GitHub Security 탭에 업로드
+      - name: 📋 Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
