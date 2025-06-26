@@ -10,6 +10,30 @@
 
 ## 🚀 Quick Start
 
+
+`.github/workflows/security.yml` 파일을 만들고 아래처럼 설정하세요:
+
+```yaml
+name: Docker 보안 스캔
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker 보안 스캐너 실행
+        uses: gnfortress/docker-security-scanner@v1
+        with:
+          image: nginx:latest
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
+```
+
+---
+
+
 ```yaml
 name: Security Scan
 on: [push, pull_request]
@@ -28,6 +52,17 @@ jobs:
 ```
 
 ## ✨ Key Features
+
+
+- 🛡️ **엔터프라이즈급 취약점 스캔** – Trivy 기반, CVSS 기준 진단
+- ⚡ **빠른 속도** – 평균 5분 내 스캔 완료
+- 📱 **Slack 실시간 알림** – DevSecOps 팀과 즉시 공유
+- 💬 **GitHub PR 코멘트** – 자동 리뷰 코멘트 등록
+- 📄 **PDF/JSON 리포트** – 감사 및 인증 대응 가능
+- 🏗️ **CI/CD 연동 최적화** – GitHub Actions와 완벽 호환
+
+---
+
 
 - 🛡️ **Enterprise-Grade Scanning** - Powered by Trivy engine with CVSS scoring
 - ⚡ **Lightning Fast** - Complete security analysis in under 5 minutes
@@ -222,6 +257,20 @@ steps:
 
 ## 🏢 Enterprise Features
 
+
+> GnFortress는 GitHub 액션 뿐 아니라 완전한 **클라우드 보안 플랫폼**도 제공합니다.
+
+- 🔒 **ISMS, 금융권 인증 대응**
+- 📊 **PDF 기반 감사 리포트 자동 생성**
+- 🤖 **AI 기반 위협 탐지 (머신러닝 모델)**
+- ☁️ **Kubernetes 및 멀티 클라우드 지원**
+- 👥 **보안팀 협업 기능 및 통합 대시보드**
+
+👉 자세한 내용은 [GnFortress 플랫폼 소개](https://gnfortress.co.kr)에서 확인하세요.
+
+---
+
+
 ### 🔒 Advanced Security Analysis
 - **CVSS 3.1 Scoring** - Industry-standard vulnerability assessment
 - **Compliance Mapping** - SOC2, PCI DSS, HIPAA compliance checks
@@ -334,11 +383,20 @@ jobs:
 
 ## 🤝 Support & Community
 
+
+- 📧 이메일: [support@gnfortress.co.kr](mailto:like@guardiannet.co.kr)
+- 🐞 이슈 제보: [GitHub Issues](https://github.com/gnfortress/docker-security-scanner/issues)
+- 💬 문의 게시판: [GitHub Discussions](https://github.com/gnfortress/docker-security-scanner/discussions)
+- 📚 공식 문서: [https://docs.gnfortress.co.kr](https://www.gnfortress.co.kr)
+
+---
+
+
 ### 💬 Get Help
-- 📧 **Enterprise Support**: [support@gnfortress.co.kr](mailto:support@gnfortress.co.kr)
+- 📧 **Enterprise Support**: [support@gnfortress.co.kr](mailto:like@guardiannet.co.kr)
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/gnfortress/docker-security-scanner/issues)
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/gnfortress/docker-security-scanner/discussions)
-- 📚 **Documentation**: [GnFortress Docs](https://docs.gnfortress.co.kr)
+- 📚 **Documentation**: [GnFortress Docs](https://www.gnfortress.co.kr)
 
 ### 🌟 Contributing
 We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
@@ -354,7 +412,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Making the cloud secure, one container at a time**
 
-[Website](https://gnfortress.co.kr) • [Platform](https://platform.gnfortress.co.kr) • [Docs](https://docs.gnfortress.co.kr) • [Blog](https://blog.gnfortress.co.kr)
+[Website](https://gnfortress.co.kr) • [Platform](https://platform.gnfortress.co.kr) • [Docs](https://www.gnfortress.co.kr) • [Blog](https://guardiannet.tistory.com/)
 
 </div># docker-security-scanner
 Enterprise-grade Docker security scanning in 5 minutes
