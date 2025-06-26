@@ -1,0 +1,31 @@
+4d65b0106907a0d0b3c4a755137ee6fd
+/**
+ * Jest 전역 정리 파일
+ * 모든 테스트 실행 후에 한 번만 실행됩니다
+ */
+
+module.exports = async () => {
+  // 테스트 실행 시간 계산
+  const testDuration = Date.now() - (global.__TEST_START_TIME__ || Date.now());
+  const durationInSeconds = (testDuration / 1000).toFixed(2);
+  console.log('');
+  console.log('🏁 GnFortress Test Suite Completed');
+  console.log(`⏱️  Total execution time: ${durationInSeconds}s`);
+
+  // 임시 파일 정리 (필요한 경우)
+  // const fs = require('fs');
+  // const path = require('path');
+  // const tempDir = path.join(__dirname, '../temp');
+  // if (fs.existsSync(tempDir)) {
+  //   fs.rmSync(tempDir, { recursive: true, force: true });
+  //   console.log('🧹 Cleaned up temporary files');
+  // }
+
+  // 메모리 정리
+  if (global.gc) {
+    global.gc();
+  }
+  console.log('✨ Global teardown completed');
+  console.log('');
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJtb2R1bGUiLCJleHBvcnRzIiwidGVzdER1cmF0aW9uIiwiRGF0ZSIsIm5vdyIsImdsb2JhbCIsIl9fVEVTVF9TVEFSVF9USU1FX18iLCJkdXJhdGlvbkluU2Vjb25kcyIsInRvRml4ZWQiLCJjb25zb2xlIiwibG9nIiwiZ2MiXSwic291cmNlcyI6WyJnbG9iYWxUZWFyZG93bi5qcyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcclxuICogSmVzdCDsoITsl60g7KCV66asIO2MjOydvFxyXG4gKiDrqqjrk6Ag7YWM7Iqk7Yq4IOyLpO2WiSDtm4Tsl5Ag7ZWcIOuyiOunjCDsi6TtlonrkKnri4jri6RcclxuICovXHJcblxyXG5tb2R1bGUuZXhwb3J0cyA9IGFzeW5jICgpID0+IHtcclxuICAvLyDthYzsiqTtirgg7Iuk7ZaJIOyLnOqwhCDqs4TsgrBcclxuICBjb25zdCB0ZXN0RHVyYXRpb24gPSBEYXRlLm5vdygpIC0gKGdsb2JhbC5fX1RFU1RfU1RBUlRfVElNRV9fIHx8IERhdGUubm93KCkpO1xyXG4gIGNvbnN0IGR1cmF0aW9uSW5TZWNvbmRzID0gKHRlc3REdXJhdGlvbiAvIDEwMDApLnRvRml4ZWQoMik7XHJcbiAgXHJcbiAgY29uc29sZS5sb2coJycpO1xyXG4gIGNvbnNvbGUubG9nKCfwn4+BIEduRm9ydHJlc3MgVGVzdCBTdWl0ZSBDb21wbGV0ZWQnKTtcclxuICBjb25zb2xlLmxvZyhg4o+x77iPICBUb3RhbCBleGVjdXRpb24gdGltZTogJHtkdXJhdGlvbkluU2Vjb25kc31zYCk7XHJcbiAgXHJcbiAgLy8g7J6E7IucIO2MjOydvCDsoJXrpqwgKO2VhOyalO2VnCDqsr3smrApXHJcbiAgLy8gY29uc3QgZnMgPSByZXF1aXJlKCdmcycpO1xyXG4gIC8vIGNvbnN0IHBhdGggPSByZXF1aXJlKCdwYXRoJyk7XHJcbiAgLy8gY29uc3QgdGVtcERpciA9IHBhdGguam9pbihfX2Rpcm5hbWUsICcuLi90ZW1wJyk7XHJcbiAgLy8gaWYgKGZzLmV4aXN0c1N5bmModGVtcERpcikpIHtcclxuICAvLyAgIGZzLnJtU3luYyh0ZW1wRGlyLCB7IHJlY3Vyc2l2ZTogdHJ1ZSwgZm9yY2U6IHRydWUgfSk7XHJcbiAgLy8gICBjb25zb2xlLmxvZygn8J+nuSBDbGVhbmVkIHVwIHRlbXBvcmFyeSBmaWxlcycpO1xyXG4gIC8vIH1cclxuICBcclxuICAvLyDrqZTrqqjrpqwg7KCV66asXHJcbiAgaWYgKGdsb2JhbC5nYykge1xyXG4gICAgZ2xvYmFsLmdjKCk7XHJcbiAgfVxyXG4gIFxyXG4gIGNvbnNvbGUubG9nKCfinKggR2xvYmFsIHRlYXJkb3duIGNvbXBsZXRlZCcpO1xyXG4gIGNvbnNvbGUubG9nKCcnKTtcclxufTsiXSwibWFwcGluZ3MiOiJBQUFBO0FBQ0E7QUFDQTtBQUNBOztBQUVBQSxNQUFNLENBQUNDLE9BQU8sR0FBRyxZQUFZO0VBQzNCO0VBQ0EsTUFBTUMsWUFBWSxHQUFHQyxJQUFJLENBQUNDLEdBQUcsQ0FBQyxDQUFDLElBQUlDLE1BQU0sQ0FBQ0MsbUJBQW1CLElBQUlILElBQUksQ0FBQ0MsR0FBRyxDQUFDLENBQUMsQ0FBQztFQUM1RSxNQUFNRyxpQkFBaUIsR0FBRyxDQUFDTCxZQUFZLEdBQUcsSUFBSSxFQUFFTSxPQUFPLENBQUMsQ0FBQyxDQUFDO0VBRTFEQyxPQUFPLENBQUNDLEdBQUcsQ0FBQyxFQUFFLENBQUM7RUFDZkQsT0FBTyxDQUFDQyxHQUFHLENBQUMsb0NBQW9DLENBQUM7RUFDakRELE9BQU8sQ0FBQ0MsR0FBRyxDQUFDLDZCQUE2QkgsaUJBQWlCLEdBQUcsQ0FBQzs7RUFFOUQ7RUFDQTtFQUNBO0VBQ0E7RUFDQTtFQUNBO0VBQ0E7RUFDQTs7RUFFQTtFQUNBLElBQUlGLE1BQU0sQ0FBQ00sRUFBRSxFQUFFO0lBQ2JOLE1BQU0sQ0FBQ00sRUFBRSxDQUFDLENBQUM7RUFDYjtFQUVBRixPQUFPLENBQUNDLEdBQUcsQ0FBQyw2QkFBNkIsQ0FBQztFQUMxQ0QsT0FBTyxDQUFDQyxHQUFHLENBQUMsRUFBRSxDQUFDO0FBQ2pCLENBQUMiLCJpZ25vcmVMaXN0IjpbXX0=

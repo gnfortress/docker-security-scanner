@@ -431,3 +431,19 @@ ${results.vulnerabilityCount === 0 ? '🎉 No vulnerabilities found! Your image 
 
 // Action 실행
 run();
+
+// ===========================================
+// 테스트용 Export (프로덕션에서는 사용되지 않음)
+// ===========================================
+if (process.env.NODE_ENV === 'test') {
+  module.exports = {
+    run,
+    installTrivy,
+    getLatestTrivyVersion,
+    pullDockerImage,
+    runTrivyScan,
+    processScanResults,
+    sendSlackNotification,
+    addPRComment
+  };
+}
