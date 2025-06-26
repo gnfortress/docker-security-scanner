@@ -384,19 +384,19 @@ jobs:
 ## 🤝 Support & Community
 
 
-- 📧 이메일: [support@gnfortress.co.kr](mailto:like@guardiannet.co.kr)
+- 📧 이메일: [like@guardiannet.co.kr](mailto:like@guardiannet.co.kr)
 - 🐞 이슈 제보: [GitHub Issues](https://github.com/gnfortress/docker-security-scanner/issues)
 - 💬 문의 게시판: [GitHub Discussions](https://github.com/gnfortress/docker-security-scanner/discussions)
-- 📚 공식 문서: [https://docs.gnfortress.co.kr](https://www.gnfortress.co.kr)
+- 📚 공식 문서: [https://guardiannet.tistory.com](https://guardiannet.tistory.com)
 
 ---
 
 
 ### 💬 Get Help
-- 📧 **Enterprise Support**: [support@gnfortress.co.kr](mailto:like@guardiannet.co.kr)
+- 📧 **Enterprise Support**: [like@guardiannet.co.kr](mailto:like@guardiannet.co.kr)
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/gnfortress/docker-security-scanner/issues)
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/gnfortress/docker-security-scanner/discussions)
-- 📚 **Documentation**: [GnFortress Docs](https://www.gnfortress.co.kr)
+- 📚 **Documentation**: [GnFortress Docs](https://guardiannet.tistory.com/)
 
 ### 🌟 Contributing
 We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
@@ -412,7 +412,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Making the cloud secure, one container at a time**
 
-[Website](https://gnfortress.co.kr) • [Platform](https://platform.gnfortress.co.kr) • [Docs](https://www.gnfortress.co.kr) • [Blog](https://guardiannet.tistory.com/)
+[Website](https://gnfortress.co.kr) • [Docs](https://www.gnfortress.co.kr) • [Blog](https://guardiannet.tistory.com/)
 
 </div># docker-security-scanner
 Enterprise-grade Docker security scanning in 5 minutes
