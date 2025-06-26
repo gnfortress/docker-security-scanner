@@ -1,0 +1,26 @@
+name: 🔄 Update rolling v1 tag
+
+on:
+  push:
+    tags:
+      - 'v1.*'   # v1.0.0, v1.1.1 등으로 푸시될 때 실행됨
+
+jobs:
+  update-v1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update v1 tag to point to latest tag
+        run: |
+          TAG_NAME=$(echo "${GITHUB_REF#refs/tags/}")
+          echo "Tag pushed: $TAG_NAME"
+
+          git tag -f v1 $TAG_NAME
+          git push -f origin v1

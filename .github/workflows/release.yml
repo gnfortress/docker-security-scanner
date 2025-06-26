@@ -1,0 +1,30 @@
+name: 🚀 Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # v로 시작하는 모든 태그 (ex: v1.0.0, v1.1.2 등)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🛠 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "🏰 GnFortress Docker Security Scanner ${{ github.ref_name }}"
+          body: |
+            ## 🎉 자동 릴리스
+
+            이 버전은 태그 `${{ github.ref_name }}` 기준으로 자동 생성되었습니다.
+            주요 변경 사항은 Git 커밋 로그를 참조하세요.
+
+            - 자동화 릴리스
+            - Marketplace에 자동 반영됩니다.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
