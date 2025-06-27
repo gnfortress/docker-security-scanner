@@ -43907,205 +43907,132 @@ module.exports = /*#__PURE__*/JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
+// index.js – 전체 수정본 (installTrivy 오류 수정 포함)
 const core = __nccwpck_require__(7484);
 const github = __nccwpck_require__(3228);
 const exec = __nccwpck_require__(5236);
 const fs = __nccwpck_require__(9896);
-const path = __nccwpck_require__(6928);
 const axios = __nccwpck_require__(7269);
+
+async function installTrivy(version = 'latest') {
+  try {
+    await exec.exec('trivy', ['version'], { silent: true });
+    core.info('✅ Trivy is already installed');
+    return;
+  } catch {
+    core.info('📥 Downloading Trivy...');
+  }
+
+  const os = process.platform;
+  const arch = process.arch === 'x64' ? 'amd64' : process.arch;
+
+  if (version === 'latest') version = await getLatestTrivyVersion();
+  const fileName = `trivy_${version}_Linux-${arch}.tar.gz`;
+  const downloadUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/${fileName}`;
+
+  await exec.exec('curl', ['-L', '-o', fileName, downloadUrl]);
+  await exec.exec('tar', ['-xzf', fileName]);
+  await exec.exec('chmod', ['+x', 'trivy']);
+  await exec.exec('sudo', ['mv', 'trivy', '/usr/local/bin/']);
+  await exec.exec('rm', ['-f', fileName]);
+  core.info('✅ Trivy installation completed');
+}
+
+async function getLatestTrivyVersion() {
+  try {
+    const res = await axios.get('https://api.github.com/repos/aquasecurity/trivy/releases/latest', {
+      headers: { 'User-Agent': 'GnFortress-Docker-Scanner' },
+    });
+    return res.data.tag_name.replace(/^v/, '');
+  } catch (e) {
+    core.warning(`⚠️ Failed to fetch Trivy version: ${e.message}`);
+    return '0.49.1';
+  }
+}
+
+async function pullDockerImage(image) {
+  try {
+    await exec.exec('docker', ['pull', image]);
+    core.info(`✅ Pulled image: ${image}`);
+  } catch (e) {
+    core.warning(`⚠️ Docker pull failed: ${e.message}`);
+  }
+}
+
+async function runTrivyScan(image, severity = 'MEDIUM') {
+  const jsonFile = 'trivy-results.json';
+  const tableFile = 'trivy-results.table';
+
+  await exec.exec('trivy', [
+    'image', '--format', 'json', '--output', jsonFile,
+    '--severity', severity, '--quiet', '--exit-code', '0', image
+  ]);
+  await exec.exec('trivy', [
+    'image', '--format', 'table', '--output', tableFile,
+    '--severity', severity, '--quiet', image
+  ]);
+
+  const json = fs.readFileSync(jsonFile, 'utf8');
+  return JSON.parse(json);
+}
+
+function countVulns(results) {
+  let counts = { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+  for (const r of results.Results || []) {
+    for (const v of r.Vulnerabilities || []) {
+      counts.total++;
+      counts[v.Severity.toLowerCase()]++;
+    }
+  }
+  return counts;
+}
+
+function generateMarkdownReport(counts, status, image) {
+  const emoji = status === 'success' ? '✅' : (status === 'failure' ? '❌' : '⚠️');
+  return `## ${emoji} Docker Security Scan Results
+
+**Image:** \`${image}\`
+
+| Severity | Count |
+|----------|-------|
+| 🔴 Critical | ${counts.critical} |
+| 🟠 High     | ${counts.high} |
+| 🟡 Medium   | ${counts.medium} |
+| 🟢 Low      | ${counts.low} |
+| **Total**  | **${counts.total}** |
+
+---
+📊 **Status:** ${status.toUpperCase()}
+🏰 Powered by GnFortress
+`;
+}
 
 async function run() {
   try {
-    core.info('🏰 GnFortress Docker Security Scanner');
-
     const image = core.getInput('image', { required: true });
-    const slackWebhook = core.getInput('slack-webhook');
-    const githubToken = core.getInput('github-token');
-    const severityThreshold = core.getInput('severity-threshold') || 'MEDIUM';
-    const failOnCritical = core.getInput('fail-on-critical') === 'true';
-    const outputFormat = core.getInput('output-format') || 'table';
-    const trivyVersion = core.getInput('trivy-version') || 'latest';
-    const cacheEnabled = core.getInput('cache-enabled') !== 'false';
+    core.info('🔍 Scanning Docker image: ' + image);
 
-    core.info(`🔍 Scanning Docker image: ${image}`);
-
-    await installTrivy(trivyVersion);
+    await installTrivy();
     await pullDockerImage(image);
+    const results = await runTrivyScan(image);
+    const counts = countVulns(results);
 
-    const scanResults = await runTrivyScan(image, severityThreshold, outputFormat, cacheEnabled);
-    const processedResults = await processScanResults(scanResults, severityThreshold);
+    core.setOutput('vulnerabilities', counts);
 
-    core.setOutput('scan-result', JSON.stringify(processedResults));
-    core.setOutput('vulnerability-count', processedResults.vulnerabilityCount.toString());
-    core.setOutput('scan-grade', processedResults.securityGrade);
+    const status = counts.critical > 0 ? 'failure' : 'success';
+    const markdown = generateMarkdownReport(counts, status, image);
+    core.setOutput('report-markdown', markdown);
 
-    if (slackWebhook) await sendSlackNotification(slackWebhook, processedResults, image);
-    if (githubToken && github.context.eventName === 'pull_request') await addPRComment(githubToken, processedResults, image);
+    if (status === 'failure') core.setFailed('❌ Critical vulnerabilities found');
+    else core.info('✅ Scan completed with no critical issues.');
 
-    core.info(`✅ Completed. Grade: ${processedResults.securityGrade}, Total Vulns: ${processedResults.vulnerabilityCount}`);
-
-    if (failOnCritical && processedResults.criticalCount > 0) {
-      core.setFailed(`❌ Critical vulnerabilities found: ${processedResults.criticalCount}`);
-    }
-  } catch (error) {
-    core.setFailed(`❌ Action failed with error: ${error.message}`);
-  }
-}
-
-function calculateSecurityGrade(totalScore) {
-  if (totalScore === 0) return 'A+';
-  if (totalScore <= 10) return 'A';
-  if (totalScore <= 25) return 'B';
-  if (totalScore <= 50) return 'C';
-  if (totalScore <= 100) return 'D';
-  return 'F';
-}
-
-async function processScanResults(scanResults, threshold) {
-  let vulnerabilityCount = 0;
-  let criticalCount = 0;
-  let highCount = 0;
-  let mediumCount = 0;
-  let lowCount = 0;
-  let totalCvssScore = 0;
-  let topVulnerabilities = [];
-
-  if (scanResults?.Results) {
-    for (const result of scanResults.Results) {
-      if (result.Vulnerabilities) {
-        for (const vuln of result.Vulnerabilities) {
-          vulnerabilityCount++;
-          const severity = vuln.Severity;
-          const cvss = vuln?.CVSS?.nvd?.V3Score || 0;
-          totalCvssScore += cvss;
-
-          switch (severity) {
-            case 'CRITICAL': criticalCount++; break;
-            case 'HIGH': highCount++; break;
-            case 'MEDIUM': mediumCount++; break;
-            case 'LOW': lowCount++; break;
-          }
-
-          topVulnerabilities.push({
-            id: vuln.VulnerabilityID,
-            pkg: vuln.PkgName,
-            severity: severity,
-            score: cvss,
-            title: vuln.Title || '',
-            url: `https://cve.mitre.org/cgi-bin/cvename.cgi?name=${vuln.VulnerabilityID}`
-          });
-        }
-      }
-    }
-  }
-
-  topVulnerabilities.sort((a, b) => b.score - a.score);
-  const top5 = topVulnerabilities.slice(0, 5);
-  const securityGrade = calculateSecurityGrade(totalCvssScore);
-
-  return {
-    vulnerabilityCount,
-    criticalCount,
-    highCount,
-    mediumCount,
-    lowCount,
-    securityGrade,
-    totalCvssScore,
-    scanTimestamp: new Date().toISOString(),
-    topVulnerabilities: top5,
-    reportPath: 'trivy-results.json'
-  };
-}
-
-function generateMarkdownReport(results, imageName) {
-  const lines = [];
-  lines.push(`## 🛡️ GnFortress 보안 스캔 리포트`);
-  lines.push(`**도커 이미지**: \`${imageName}\``);
-  lines.push(`**보안 등급**: \`${results.securityGrade}\` (총 CVSS: ${results.totalCvssScore})`);
-  lines.push(`**취약점 개수**: 총 ${results.vulnerabilityCount}개`);
-  lines.push(`- 🔴 Critical: ${results.criticalCount}`);
-  lines.push(`- 🟠 High: ${results.highCount}`);
-  lines.push(`- 🟡 Medium: ${results.mediumCount}`);
-  lines.push(`- 🟢 Low: ${results.lowCount}`);
-  lines.push('');
-
-  if (results.topVulnerabilities.length > 0) {
-    lines.push('### 🔍 주요 취약점 요약');
-    results.topVulnerabilities.forEach((vuln, idx) => {
-      lines.push(`${idx + 1}. [${vuln.id}](${vuln.url}) - **${vuln.severity}**, ${vuln.pkg}, CVSS ${vuln.score}`);
-      if (vuln.title) lines.push(`    > ${vuln.title}`);
-    });
-  }
-
-  lines.push('\n🏰 Powered by GnFortress - Enterprise Cloud Security');
-  return lines.join('\n');
-}
-
-async function sendSlackNotification(webhookUrl, results, imageName) {
-  try {
-    const statusEmoji = {
-      A: ':white_check_mark:',
-      B: ':large_blue_circle:',
-      C: ':warning:',
-      D: ':x:',
-      F: ':bangbang:'
-    };
-
-    const emoji = statusEmoji[results.securityGrade.charAt(0)] || ':shield:';
-
-    const topList = results.topVulnerabilities.map((v, i) => `• *${v.id}* (${v.severity}, ${v.pkg}, CVSS ${v.score})`).slice(0, 5).join('\n');
-
-    const payload = {
-      username: 'GnFortress Scanner',
-      icon_emoji: ':shield:',
-      attachments: [
-        {
-          color: '#36a64f',
-          title: `${emoji} Docker 보안 스캔 결과 - ${results.securityGrade} 등급`,
-          fields: [
-            { title: '이미지', value: imageName, short: true },
-            { title: '총 취약점', value: `${results.vulnerabilityCount}`, short: true },
-            { title: 'Critical', value: `${results.criticalCount}`, short: true },
-            { title: 'High', value: `${results.highCount}`, short: true },
-            { title: 'CVSS 총점', value: `${results.totalCvssScore}`, short: true }
-          ],
-          text: topList ? `*Top 취약점:*
-${topList}` : '취약점 상세 정보 없음',
-          footer: 'GnFortress 보안 스캐너',
-          ts: Math.floor(Date.now() / 1000)
-        }
-      ]
-    };
-
-    await axios.post(webhookUrl, payload, {
-      headers: { 'Content-Type': 'application/json' }
-    });
-    core.info('✅ Slack notification sent successfully');
-  } catch (error) {
-    core.warning(`⚠️ Failed to send Slack notification: ${error.message}`);
-  }
-}
-
-async function addPRComment(token, results, imageName) {
-  try {
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    if (context.eventName !== 'pull_request') return;
-
-    const body = generateMarkdownReport(results, imageName);
-    await octokit.rest.issues.createComment({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      issue_number: context.payload.pull_request.number,
-      body
-    });
-    core.info('✅ PR comment added successfully');
-  } catch (error) {
-    core.warning(`⚠️ Failed to add PR comment: ${error.message}`);
+  } catch (err) {
+    core.setFailed(`❌ Action failed: ${err.message}`);
   }
 }
 
 run();
+
 module.exports = __webpack_exports__;
 /******/ })()
 ;
