@@ -68,40 +68,21 @@ async function run() {
 
 async function installTrivy(version = 'latest') {
   try {
-    try {
-      await exec.exec('trivy', ['version'], { silent: true });
-      core.info('✅ Trivy is already installed');
-      return;
-    } catch {}
-
-    const os = process.platform;
-    const arch = process.arch === 'x64' ? 'amd64' : process.arch;
-    if (version === 'latest') {
-      version = await getLatestTrivyVersion();
-    }
-
-    const fileName = os === 'linux'
-      ? `trivy_${version}_Linux-${arch}.tar.gz`
-      : `trivy_${version}_macOS-${arch}.tar.gz`;
-    const downloadUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/${fileName}`;
-
-    core.info(`📥 Downloading Trivy from: ${downloadUrl}`);
-    await exec.exec('curl', ['-L', '-o', fileName, downloadUrl]);
-
-    if (!fs.existsSync(fileName)) {
-      throw new Error(`❌ Download failed or file not found: ${fileName}`);
-    }
-
-    await exec.exec('tar', ['-xzf', fileName]);
-    await exec.exec('chmod', ['+x', 'trivy']);
-    await exec.exec('sudo', ['mv', 'trivy', '/usr/local/bin/']);
-    await exec.exec('rm', ['-f', fileName]);
+    await exec.exec('trivy', ['version'], { silent: true });
+    core.info('✅ Trivy is already installed');
+  } catch {
+    core.info('📥 Installing Trivy using official install script');
+    await exec.exec('sh', ['-c', "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin"]);
     core.info('✅ Trivy installed successfully');
-  } catch (error) {
-    throw new Error(`Failed to install Trivy: ${error.message}`);
+  }
+});
+    core.info('✅ Trivy is already installed');
+  } catch {
+    core.info('📥 Installing Trivy using official install script');
+    await exec.exec('sh', ['-c', "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin"]);
+    core.info('✅ Trivy installed successfully');
   }
 }
-
 async function getLatestTrivyVersion() {
   try {
     const response = await axios.get('https://api.github.com/repos/aquasecurity/trivy/releases/latest', {
