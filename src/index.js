@@ -68,21 +68,46 @@ async function run() {
 
 async function installTrivy(version = 'latest') {
   try {
-    await exec.exec('trivy', ['version'], { silent: true });
-    core.info('✅ Trivy is already installed');
-  } catch {
-    core.info('📥 Installing Trivy using official install script');
-    await exec.exec('sh', ['-c', "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin"]);
+    try {
+      await exec.exec('trivy', ['version'], { silent: true });
+      core.info('✅ Trivy is already installed');
+      return;
+    } catch {
+      core.info('⬇️ Trivy not found, installing...');
+    }
+
+    const os = 'Linux'; // GitHub Actions 환경 고정
+    const arch = 'amd64';
+    if (version === 'latest') {
+      version = await getLatestTrivyVersion();
+    }
+
+    const fileName = `trivy_${version}_${os}-${arch}.tar.gz`;
+    const downloadUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/${fileName}`;
+
+    core.info(`📥 Downloading Trivy from: ${downloadUrl}`);
+    await exec.exec('curl', ['-L', '-o', fileName, downloadUrl]);
+
+    if (!fs.existsSync(fileName)) {
+      throw new Error(`❌ Download failed or file not found: ${fileName}`);
+    }
+
+    core.info(`🧩 Extracting ${fileName}`);
+    try {
+      await exec.exec('tar', ['-xzf', fileName]);
+    } catch (tarError) {
+      throw new Error(`❌ Failed to extract Trivy archive: ${tarError.message}`);
+    }
+
+    await exec.exec('chmod', ['+x', 'trivy']);
+    await exec.exec('sudo', ['mv', 'trivy', '/usr/local/bin/']);
+    await exec.exec('rm', ['-f', fileName]);
     core.info('✅ Trivy installed successfully');
-  }
-});
-    core.info('✅ Trivy is already installed');
-  } catch {
-    core.info('📥 Installing Trivy using official install script');
-    await exec.exec('sh', ['-c', "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin"]);
-    core.info('✅ Trivy installed successfully');
+  } catch (error) {
+    throw new Error(`Failed to install Trivy: ${error.message}`);
   }
 }
+
 async function getLatestTrivyVersion() {
   try {
     const response = await axios.get('https://api.github.com/repos/aquasecurity/trivy/releases/latest', {
@@ -90,7 +115,7 @@ async function getLatestTrivyVersion() {
     });
     return response.data.tag_name.replace(/^v/, '');
   } catch {
-    return '0.49.1';
+    return '0.49.1'; // fallback
   }
 }
 

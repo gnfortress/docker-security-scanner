@@ -43981,17 +43981,17 @@ async function installTrivy(version = 'latest') {
       await exec.exec('trivy', ['version'], { silent: true });
       core.info('✅ Trivy is already installed');
       return;
-    } catch {}
+    } catch {
+      core.info('⬇️ Trivy not found, installing...');
+    }
 
-    const os = process.platform;
-    const arch = process.arch === 'x64' ? 'amd64' : process.arch;
+    const os = 'Linux'; // GitHub Actions 환경 고정
+    const arch = 'amd64';
     if (version === 'latest') {
       version = await getLatestTrivyVersion();
     }
 
-    const fileName = os === 'linux'
-      ? `trivy_${version}_Linux-${arch}.tar.gz`
-      : `trivy_${version}_macOS-${arch}.tar.gz`;
+    const fileName = `trivy_${version}_${os}-${arch}.tar.gz`;
     const downloadUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/${fileName}`;
 
     core.info(`📥 Downloading Trivy from: ${downloadUrl}`);
@@ -44001,7 +44001,13 @@ async function installTrivy(version = 'latest') {
       throw new Error(`❌ Download failed or file not found: ${fileName}`);
     }
 
-    await exec.exec('tar', ['-xzf', fileName]);
+    core.info(`🧩 Extracting ${fileName}`);
+    try {
+      await exec.exec('tar', ['-xzf', fileName]);
+    } catch (tarError) {
+      throw new Error(`❌ Failed to extract Trivy archive: ${tarError.message}`);
+    }
+
     await exec.exec('chmod', ['+x', 'trivy']);
     await exec.exec('sudo', ['mv', 'trivy', '/usr/local/bin/']);
     await exec.exec('rm', ['-f', fileName]);
@@ -44018,7 +44024,7 @@ async function getLatestTrivyVersion() {
     });
     return response.data.tag_name.replace(/^v/, '');
   } catch {
-    return '0.49.1';
+    return '0.49.1'; // fallback
   }
 }
 
