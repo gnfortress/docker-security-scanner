@@ -15,7 +15,7 @@ async function run() {
     const severityThreshold = core.getInput('severity-threshold') || 'MEDIUM';
     const failOnCritical = core.getInput('fail-on-critical') === 'true';
     const outputFormat = core.getInput('output-format') || 'table';
-    const trivyVersion = core.getInput('trivy-version') || '0.45.0'; // ✅ 고정 버전
+    const trivyVersion = core.getInput('trivy-version') || '0.45.0'; // ✅ 기본값 고정
     const cacheEnabled = core.getInput('cache-enabled') !== 'false';
 
     core.info(`🔍 Scanning Docker image: ${image}`);
@@ -27,7 +27,7 @@ async function run() {
     await installTrivy(trivyVersion);
     await pullDockerImage(image);
     const scanResults = await runTrivyScan(image, severityThreshold, outputFormat, cacheEnabled);
-    const processedResults = await processScanResults(scanResults, severityThreshold);
+    const processedResults = await processScanResults(scanResults);
 
     core.setOutput('scan-result', JSON.stringify(processedResults));
     core.setOutput('vulnerability-count', processedResults.vulnerabilityCount.toString());
@@ -76,7 +76,7 @@ async function installTrivy(version = 'latest') {
     }
 
     const os = 'Linux';
-    const arch = 'amd64';
+    const arch = '64bit'; // ✅ 수정: amd64 → 64bit
     if (version === 'latest') {
       version = await getLatestTrivyVersion();
     }
@@ -120,13 +120,13 @@ async function getLatestTrivyVersion() {
       headers: { 'User-Agent': 'GnFortress-Docker-Scanner' }
     });
     const version = response.data.tag_name.replace(/^v/, '');
+    const testUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/trivy_${version}_Linux-64bit.tar.gz`;
 
-    const testUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/trivy_${version}_Linux-amd64.tar.gz`;
     try {
-      await axios.head(testUrl); // tar.gz 존재 여부 확인
+      await axios.head(testUrl);
       return version;
     } catch {
-      return '0.45.0'; // fallback
+      return '0.45.0';
     }
   } catch {
     return '0.45.0';
