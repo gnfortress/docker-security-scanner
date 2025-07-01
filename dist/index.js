@@ -43911,7 +43911,6 @@ const core = __nccwpck_require__(7484);
 const github = __nccwpck_require__(3228);
 const exec = __nccwpck_require__(5236);
 const fs = __nccwpck_require__(9896);
-const path = __nccwpck_require__(6928);
 const axios = __nccwpck_require__(7269);
 
 async function run() {
@@ -43925,7 +43924,7 @@ async function run() {
     const severityThreshold = core.getInput('severity-threshold') || 'MEDIUM';
     const failOnCritical = core.getInput('fail-on-critical') === 'true';
     const outputFormat = core.getInput('output-format') || 'table';
-    const trivyVersion = core.getInput('trivy-version') || 'latest';
+    const trivyVersion = core.getInput('trivy-version') || '0.45.0'; // ✅ 고정 버전
     const cacheEnabled = core.getInput('cache-enabled') !== 'false';
 
     core.info(`🔍 Scanning Docker image: ${image}`);
@@ -43985,7 +43984,7 @@ async function installTrivy(version = 'latest') {
       core.info('⬇️ Trivy not found, installing...');
     }
 
-    const os = 'Linux'; // GitHub Actions 환경 고정
+    const os = 'Linux';
     const arch = 'amd64';
     if (version === 'latest') {
       version = await getLatestTrivyVersion();
@@ -43993,12 +43992,18 @@ async function installTrivy(version = 'latest') {
 
     const fileName = `trivy_${version}_${os}-${arch}.tar.gz`;
     const downloadUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/${fileName}`;
-
     core.info(`📥 Downloading Trivy from: ${downloadUrl}`);
+
     await exec.exec('curl', ['-L', '-o', fileName, downloadUrl]);
 
     if (!fs.existsSync(fileName)) {
       throw new Error(`❌ Download failed or file not found: ${fileName}`);
+    }
+
+    const stats = fs.statSync(fileName);
+    core.info(`📦 Downloaded file size: ${stats.size} bytes`);
+    if (stats.size < 10000) {
+      throw new Error(`❌ Downloaded file too small, possibly invalid archive (got ${stats.size} bytes)`);
     }
 
     core.info(`🧩 Extracting ${fileName}`);
@@ -44011,6 +44016,7 @@ async function installTrivy(version = 'latest') {
     await exec.exec('chmod', ['+x', 'trivy']);
     await exec.exec('sudo', ['mv', 'trivy', '/usr/local/bin/']);
     await exec.exec('rm', ['-f', fileName]);
+
     core.info('✅ Trivy installed successfully');
   } catch (error) {
     throw new Error(`Failed to install Trivy: ${error.message}`);
@@ -44022,9 +44028,17 @@ async function getLatestTrivyVersion() {
     const response = await axios.get('https://api.github.com/repos/aquasecurity/trivy/releases/latest', {
       headers: { 'User-Agent': 'GnFortress-Docker-Scanner' }
     });
-    return response.data.tag_name.replace(/^v/, '');
+    const version = response.data.tag_name.replace(/^v/, '');
+
+    const testUrl = `https://github.com/aquasecurity/trivy/releases/download/v${version}/trivy_${version}_Linux-amd64.tar.gz`;
+    try {
+      await axios.head(testUrl); // tar.gz 존재 여부 확인
+      return version;
+    } catch {
+      return '0.45.0'; // fallback
+    }
   } catch {
-    return '0.49.1'; // fallback
+    return '0.45.0';
   }
 }
 
@@ -44060,7 +44074,7 @@ async function runTrivyScan(image, threshold, format, cacheEnabled) {
   return results;
 }
 
-async function processScanResults(scanResults, threshold) {
+async function processScanResults(scanResults) {
   let vulnerabilityCount = 0, criticalCount = 0, highCount = 0, mediumCount = 0, lowCount = 0;
   let scanStatus = 'success';
 
